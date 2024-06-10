@@ -135,17 +135,25 @@ def run(
                     if region["polygon"].contains(Point((bbox_center[0], bbox_center[1]))):
                         region["counts"] += 1
 
-        # Draw regions (Polygons/Rectangles)
+        # Draw regions (Polygons/Rectangles) and traffic condition
         for region in counting_regions: 
-            region_label = str(region["counts"])
+            region_label = f"{region['name']} - {region['counts']} Kendaraan"
             region_color = region["region_color"]
             region_text_color = region["text_color"]
 
             polygon_coords = np.array(region["polygon"].exterior.coords, dtype=np.int32)
             centroid_x, centroid_y = int(region["polygon"].centroid.x), int(region["polygon"].centroid.y)
 
+            # Determine traffic condition for each region
+            if region["counts"] >= 20:
+                traffic_condition = "Padat"
+            elif region["counts"] >= 10:
+                traffic_condition = "Sedang"
+            else:
+                traffic_condition = "Lancar"
+
             text_size, _ = cv2.getTextSize(
-                region_label, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
+                f"{region_label}: {traffic_condition}", cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
             )
             text_x = centroid_x - text_size[0] // 2
             text_y = centroid_y + text_size[1] // 2
@@ -157,11 +165,11 @@ def run(
                 -1,
             )
             cv2.putText(
-                frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color, line_thickness
+                frame, f"{region_label}: {traffic_condition}", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color, line_thickness
             )
             cv2.polylines(frame, [polygon_coords], isClosed=True, color=region_color, thickness=region_thickness)
 
-        cv2.line(frame, (0, 300), (1280, 300), (255,255,255), 1)
+        cv2.line(frame, (0, 300), (1280, 300), (255, 255, 255), 1)
 
         if view_img:
             if vid_frame_count == 1:
@@ -199,6 +207,7 @@ def parse_opt():
     parser.add_argument("--region-thickness", type=int, default=4, help="Region thickness")
 
     return parser.parse_args()
+
 
 
 def main(opt):
